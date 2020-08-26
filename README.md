@@ -2,7 +2,7 @@
 
 ## simple
 
-A basic test case [unfinished]
+A basic test case
 
 ## merrimack
 
