@@ -1,7 +1,9 @@
+from glob import glob
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-import pygrigen
+import pygridgen
 import cartopy.crs as ccrs
 
 beta, lonbry, latbry = np.loadtxt('grd_bry_test.dat', unpack=True)
@@ -22,18 +24,20 @@ def focus(x, y, xo=0.6, yo=0.5):
 
 shp = (259, 515)        # shape of the large grid
 
+# get the points in a projected coordinate system
 xbry, ybry, _ = proj.transform_points(ccrs.PlateCarree(), lonbry, latbry).T
 
+# run pygridgen
 grd = pygridgen.grid.Gridgen(xbry, ybry, beta, shp, 
                             focus=focus, ul_idx=ul_idx, verbose=True)
 							
-
+# mask the grid using existing polygons that represent land
 for maskfile in glob('*.mask'):
     lon, lat = np.loadtxt(maskfile, unpack=True)
     x, y, _ = proj.transform_points(ccrs.PlateCarree(),lon, lat).T
     grd.mask_polygon(np.vstack((x, y)).T)
 
-
+# An extra masked region, done by hand to fix the grid
 lon = np.array([-70.809356641927451,
                 -70.807724158705241,
                 -70.80674047240781 ,
@@ -48,9 +52,23 @@ x, y, _ = proj.transform_points(ccrs.PlateCarree(),lon, lat).T
 
 grd.mask_polygon(np.vstack((x, y)).T)
 
+# plot the grid
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(grd.x, grd.y, '-k')
+ax.plot(grd.x.T, grd.y.T, '-k')
+ax.set_aspect(1.0)
+ax.set_title('The full grid for the Merrimack domain')
 
-plt.plot(grd.x, grd.y, '-k')
-plt.plot(grd.x.T, grd.y.T, '-k')
+# plot the mask
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.pcolor(grd.x.filled(np.nan), grd.y.filled(np.nan), grd.mask, 
+          cmap=plt.cm.Blues, vmin=-0.2)
+ax.set_aspect(1.0)
+ax.set_title('The masked grid for the Merrimack domain')
 
+
+## TODO: add bathymetric interpolation
 
 
